@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ChatMemberHandler
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, ChatMemberHandler, MessageHandler, filters
 
 # Включаем логирование
 logging.basicConfig(
@@ -54,30 +54,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def send_welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.info('send_welcome called')
-    logging.info(f'Update: {update}')
-    logging.info(f'Context: {context}')
 
-    if update.message:
-        logging.info('Update has a message')
-        if update.message.new_chat_members:
-            logging.info('Update has new chat members')
-            new_members = update.message.new_chat_members
-            for member in new_members:
-                if member.id != context.bot.id:
-                    now = datetime.now()
-                    if member.id in welcome_times:
-                        last_welcome_time = welcome_times[member.id]
-                        if now - last_welcome_time < WELCOME_INTERVAL:
-                            logging.info(f"Skipped welcome message for {member.full_name}, less than 12 hours since last welcome")
-                            continue  # Если прошло меньше 12 часов, пропускаем приветствие
-                    # Обновляем время последнего приветствия
-                    welcome_times[member.id] = now
-                    await update.message.reply_text(f"Bee, {member.full_name}!\n{CHAT_RULES}")
-                    logging.info(f"Sent welcome message to {member.full_name}")
-        else:
-            logging.info('No new chat members in the update')
-    else:
-        logging.info('Update has no message')
+    if update.message and update.message.new_chat_members:
+        new_members = update.message.new_chat_members
+        for member in new_members:
+            if member.id != context.bot.id:
+                now = datetime.now()
+                if member.id in welcome_times:
+                    last_welcome_time = welcome_times[member.id]
+                    if now - last_welcome_time < WELCOME_INTERVAL:
+                        logging.info(f"Skipped welcome message for {member.full_name}, less than 12 hours since last welcome")
+                        continue  # Если прошло меньше 12 часов, пропускаем приветствие
+                # Обновляем время последнего приветствия
+                welcome_times[member.id] = now
+                await update.message.reply_text(f"Bee, {member.full_name}!\n{CHAT_RULES}")
+                logging.info(f"Sent welcome message to {member.full_name}")
 
 async def handle_all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.info(f'Handle all messages called with update: {update}')
