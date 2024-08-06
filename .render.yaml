@@ -1,6 +1,0 @@
-services:
-  - name: FaHTelegramBot
-    plan: free
-    env:
-      - key: TOKEN
-        value: ${{TOKEN}}
