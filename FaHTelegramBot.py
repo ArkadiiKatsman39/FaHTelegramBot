@@ -4,7 +4,8 @@ import asyncio
 from datetime import datetime, timedelta
 from flask import Flask, request
 import telegram
-from telegram import Update, ParseMode
+from telegram import Update
+from telegram.constants import ParseMode  # Updated import
 from telegram.ext import CommandHandler, MessageHandler, filters
 
 TOKEN = os.getenv('TOKEN')
@@ -73,7 +74,7 @@ async def send_welcome(update: Update, context) -> None:
                 await context.bot.send_message(
                     chat_id=update.message.chat_id,
                     text=f"Bee, {mention_name}!\n{CHAT_RULES}",
-                    parse_mode=ParseMode.MARKDOWN
+                    parse_mode=ParseMode.MARKDOWN  # Ensure the correct parse mode is used
                 )
 
 # Webhook route for Telegram to send updates
