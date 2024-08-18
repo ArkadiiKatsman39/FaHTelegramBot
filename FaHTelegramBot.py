@@ -40,16 +40,23 @@ CHAT_RULES = """
 welcome_times = {}
 WELCOME_INTERVAL = timedelta(hours=12)
 
+# Configure logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+# Create Flask app
+app = Flask(__name__)
+bot = telegram.Bot(token=TOKEN)
+
+# Command to start the bot
+async def start(update: Update, context) -> None:
     logging.info('Handled /start command from %s', update.message.from_user.username)
     await update.message.reply_text('Bee-bee. (I was created to help manage a telegram channel, devoted to the game F&H)')
 
-async def send_welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+# Function to send welcome messages to new chat members
+async def send_welcome(update: Update, context) -> None:
     if update.message and update.message.new_chat_members:
         for member in update.message.new_chat_members:
             if member.id != context.bot.id:
@@ -66,11 +73,21 @@ async def send_welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     parse_mode=ParseMode.MARKDOWN
                 )
 
-def main() -> None:
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, send_welcome))
-    app.run_polling()
+# Webhook route for Telegram to send updates
+@app.route('/' + TOKEN, methods=['POST'])
+def respond():
+    update = telegram.Update.de_json(request.get_json(force=True), bot)
+    if update.message:
+        if update.message.new_chat_members:
+            asyncio.run(send_welcome(update, None))
+        elif update.message.text == "/start":
+            asyncio.run(start(update, None))
+    return 'ok'
 
-if __name__ == "__main__":
-    main()
+# Basic route to check if the bot is running
+@app.route('/')
+def index():
+    return 'Bot is running.'
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
