@@ -1,10 +1,13 @@
 import logging
-from telegram import Update
-from telegram.constants import ParseMode
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+import os
+import asyncio
 from datetime import datetime, timedelta
+from flask import Flask, request
+import telegram
+from telegram import Update, ParseMode
+from telegram.ext import CommandHandler, MessageHandler, filters
 
-TOKEN = '7348691966:AAENnIrfPZc5iVxBdYIZJSFvP7UGxVzaUmc'
+TOKEN = os.getenv('TOKEN')
 CHAT_RULES = """
 *Добро пожаловать в чат!* Пожалуйста, ознакомься с нашими правилами📜
 *Всё серьёзно и очень строго!*
