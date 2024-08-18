@@ -1,18 +1,12 @@
 import logging
-from datetime import datetime, timedelta
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, ChatMemberHandler, MessageHandler, filters
+from telegram.constants import ParseMode
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+from datetime import datetime, timedelta
 
-# Включаем логирование
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-
-# Ваш токен, полученный от BotFather
 TOKEN = '7348691966:AAENnIrfPZc5iVxBdYIZJSFvP7UGxVzaUmc'
 CHAT_RULES = """
-**Добро пожаловать в чат!** Пожалуйста, ознакомься с нашими правилами📜
+*Добро пожаловать в чат!* Пожалуйста, ознакомься с нашими правилами📜
 *Всё серьёзно и очень строго!*
 
 1. ❌ **Запрещены политические срачи и сопутствующий нацизм**. Вы вольны заниматься этим друг с другом в личных сообщениях, но в нашем чате это будет караться баном.
@@ -40,56 +34,43 @@ CHAT_RULES = """
 4. 📸 **You can post pornography and other 18+ NSFW content in the chat, but only under a spoiler and preferably with a warning**. This applies to content related to the theme of the channel and chat (the Fear and Hunger game series, for those who don't know). Trash content of other nature is prohibited.
 
 5. 🍆 **Discussion of sexual life is prohibited** if other chat participants find it unpleasant. Punishable by mute (communicate in PM on this topic).
+...
 """
 
-# Словарь для хранения временных меток приветствий
 welcome_times = {}
-
-# Интервал времени между приветствиями (12 часов)
 WELCOME_INTERVAL = timedelta(hours=12)
 
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logging.info('Handled /start command from %s', update.message.from_user.username)
     await update.message.reply_text('Bee-bee. (I was created to help manage a telegram channel, devoted to the game F&H)')
-    logging.info('Handled /start command')
 
 async def send_welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logging.info('send_welcome called')
-
     if update.message and update.message.new_chat_members:
-        new_members = update.message.new_chat_members
-        for member in new_members:
+        for member in update.message.new_chat_members:
             if member.id != context.bot.id:
                 now = datetime.now()
                 if member.id in welcome_times:
                     last_welcome_time = welcome_times[member.id]
                     if now - last_welcome_time < WELCOME_INTERVAL:
-                        logging.info(f"Skipped welcome message for {member.full_name}, less than 12 hours since last welcome")
-                        continue  # Если прошло меньше 12 часов, пропускаем приветствие
-                # Обновляем время последнего приветствия
+                        continue
                 welcome_times[member.id] = now
-                await update.message.reply_text(f"Bee, {member.full_name}!\n{CHAT_RULES}")
-                logging.info(f"Sent welcome message to {member.full_name}")
-
-async def handle_all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logging.info(f'Handle all messages called with update: {update}')
+                mention_name = f"@{member.username}" if member.username else member.full_name
+                await context.bot.send_message(
+                    chat_id=update.message.chat_id,
+                    text=f"Bee, {mention_name}!\n{CHAT_RULES}",
+                    parse_mode=ParseMode.MARKDOWN
+                )
 
 def main() -> None:
-    logging.info('Starting bot')
-    # Создаем приложение и передаем ему токен вашего бота.
     app = ApplicationBuilder().token(TOKEN).build()
-
-    # Обработчик команды /start
     app.add_handler(CommandHandler("start", start))
-
-    # Обработчик новых участников
-    app.add_handler(ChatMemberHandler(send_welcome, ChatMemberHandler.CHAT_MEMBER))
-
-    # Обработчик всех сообщений для отладки
-    app.add_handler(MessageHandler(filters.ALL, handle_all_messages))
-
-    # Запускаем бота
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, send_welcome))
     app.run_polling()
-    logging.info('Bot is running')
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
